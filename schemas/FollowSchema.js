@@ -1,5 +1,4 @@
 const { getDatabase } = require("../config/mongoConfig");
-
 const typeDefsFollow = `#graphql
 
   type Follow {
@@ -10,25 +9,25 @@ const typeDefsFollow = `#graphql
     updatedAt: String
   }
 
-  input addFollowField {
-    followingId: ID!
+  input AddFollowField {
     followerId: ID!
   }
 
   type Mutation {
-    follow(fields: addFollowField): Follow
+    follow(fields: AddFollowField): Follow
   }
 `;
 const resolversFollow = {
   Mutation: {
-    follow: async (parent, args) => {
-      const { followingId, followerId } = args.fields;
+    follow: async (parent, args, context) => {
+      const auth = await context.auth();
+      const { followerId } = args.fields;
       try {
         const db = getDatabase();
         const follows = db.collection("follows");
 
         const follow = await follows.insertOne({
-          followingId,
+          followingId: auth.id,
           followerId,
           createdAt: new Date(),
           updatedAt: new Date(),
@@ -39,7 +38,7 @@ const resolversFollow = {
         });
         return result;
       } catch (error) {
-        console.log(error);
+        throw error;
       }
     },
   },

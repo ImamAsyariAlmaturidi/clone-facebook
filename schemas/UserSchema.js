@@ -10,35 +10,37 @@ const typeDefsUser = `#graphql
     username: String!
     email: String!
     password: String
+    followers: [User]
+    followings: [User]
   }
 
 
-  input registerField {
+  input RegisterField {
     name: String!
     username: String!
     email: String!
     password: String!
  }
 
-  input loginField {
+  input LoginField {
     email: String!
     password: String!
   }
 
-  type responseLogin {
+  type ResponseLoginField {
     message: String!
     access_token: String!
   }
 
   type Query {
     users: [User]
-    searchUserById(_id: String): User
+    searchUserById: User
     searchUserByUsername: [User]
   }
 
   type Mutation {
-  register(fields: registerField) : String
-  login(fields: loginField) : responseLogin
+  register(fields: RegisterField) : String
+  login(fields: LoginField) : ResponseLoginField
   }
 
 
@@ -51,35 +53,131 @@ const resolversUser = {
         const db = getDatabase();
         const users = db.collection("users");
 
-        const user = await users.find().toArray();
+        const agg = [
+          {
+            $lookup: {
+              from: "follows",
+              localField: "_id",
+              foreignField: "followingId",
+              as: "followings",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "followings.followerId",
+              foreignField: "_id",
+              as: "followings",
+            },
+          },
+          {
+            $project: {
+              password: 0,
+              "followings.password": 0,
+            },
+          },
+          {
+            $lookup: {
+              from: "follows",
+              localField: "_id",
+              foreignField: "followerId",
+              as: "followers",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "followers.followingId",
+              foreignField: "_id",
+              as: "followers",
+            },
+          },
+          {
+            $project: {
+              "followers.password": 0,
+            },
+          },
+        ];
+
+        const user = await users.aggregate(agg).toArray();
+
         return user;
       } catch (error) {
-        console.log(error);
+        throw error;
       }
     },
 
-    searchUserById: async (parent, args) => {
+    searchUserById: async (parent, args, context) => {
+      const auth = await context.auth();
       try {
         const db = getDatabase();
         const users = db.collection("users");
 
-        const user = await users.findOne({
-          _id: new ObjectId(args._id),
-        });
+        const agg = [
+          {
+            $match: {
+              _id: new ObjectId(auth.id),
+            },
+          },
+          {
+            $lookup: {
+              from: "follows",
+              localField: "_id",
+              foreignField: "followingId",
+              as: "followings",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "followings.followerId",
+              foreignField: "_id",
+              as: "followings",
+            },
+          },
+          {
+            $project: {
+              password: 0,
+              "followings.password": 0,
+            },
+          },
+          {
+            $lookup: {
+              from: "follows",
+              localField: "_id",
+              foreignField: "followerId",
+              as: "followers",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "followers.followingId",
+              foreignField: "_id",
+              as: "followers",
+            },
+          },
+          {
+            $project: {
+              "followers.password": 0,
+            },
+          },
+        ];
 
-        if (!user) {
+        const user = await users.aggregate(agg).toArray();
+
+        if (user.length < 0) {
           throw new GraphQLError("User not Found", {
             extensions: {
               code: "NOT FOUND",
-              http: { status: 4040 },
+              http: { status: 404 },
             },
           });
         }
 
-        user.password = null;
-        return user;
+        return user[0];
       } catch (error) {
-        console.log(error);
+        throw error;
       }
     },
   },
@@ -108,11 +206,12 @@ const resolversUser = {
 
         return "Success Create User";
       } catch (error) {
-        console.log(error);
+        throw error;
       }
     },
 
     login: async (parent, args) => {
+      const { email, password } = args.fields;
       try {
         if (!args.fields) {
           throw new GraphQLError("invalid input", {
@@ -122,7 +221,6 @@ const resolversUser = {
             },
           });
         }
-        const { email, password } = args.fields;
 
         db = getDatabase();
         const users = db.collection("users");
@@ -132,19 +230,19 @@ const resolversUser = {
         });
 
         if (!user) {
-          throw new GraphQLError("User not found", {
+          throw new GraphQLError("Invalid Email OR Password", {
             extensions: {
-              code: "NOT FOUND",
-              http: { status: 404 },
+              code: "UNAUTHENTICATED",
+              http: { status: 401 },
             },
           });
         }
 
         if (!comparePassword(password, user.password)) {
-          throw new GraphQLError("Username or Password Doesn't Match", {
+          throw new GraphQLError("Invalid Email OR Password", {
             extensions: {
-              code: "BAD REQUEST",
-              http: { status: 404 },
+              code: "UNAUTHENTICATED",
+              http: { status: 401 },
             },
           });
         }
@@ -163,7 +261,7 @@ const resolversUser = {
           access_token: token,
         };
       } catch (error) {
-        console.log(error);
+        throw error;
       }
     },
   },
