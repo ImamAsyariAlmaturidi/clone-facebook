@@ -13,6 +13,7 @@
     "@apollo/server": "^4.11.0",
     "bcrypt": "^5.1.1",
     "graphql": "^16.9.0",
+    "jsonwebtoken": "^9.0.2",
     "mongodb": "^6.8.0"
   },
   "devDependencies": {
