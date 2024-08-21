@@ -48,7 +48,7 @@ const resolversFollow = {
         });
 
         if (existsFollows) {
-          throw new GraphQLError("Can't follow again!", {
+          throw new GraphQLError("Already Followed", {
             extensions: {
               code: "BAD REQUEST",
               http: { status: 400 },

@@ -101,8 +101,6 @@ const resolversUser = {
         ];
 
         const user = await users.aggregate(agg).toArray();
-
-        console.log(user);
         return user;
       } catch (error) {
         throw error;

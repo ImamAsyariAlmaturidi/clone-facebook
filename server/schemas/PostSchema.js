@@ -178,8 +178,6 @@ const resolversPost = {
           createdAt: new Date(),
           updatedAt: new Date(),
         };
-
-        console.log(auth.id);
         const post = await posts.insertOne(data);
         const result = await posts.findOne({
           _id: post.insertedId,
@@ -198,7 +196,6 @@ const resolversPost = {
 
         return result;
       } catch (error) {
-        console.log(error);
         throw error;
       }
     },
@@ -240,7 +237,6 @@ const resolversPost = {
 
         return "Comment Success";
       } catch (error) {
-        console.log(error);
         throw error;
       }
     },
