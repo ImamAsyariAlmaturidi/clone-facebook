@@ -10,6 +10,7 @@ const typeDefsPost = `#graphql
     createdAt: String
     updatedAt: String
   }
+
   type Like {
     username: String!
     createdAt: String
@@ -26,12 +27,12 @@ const typeDefsPost = `#graphql
     likes: [Like]
     createdAt: String
     updatedAt: String
+    author: User
   }
   
   input AddPostField {
     content: String!
     imgUrl: String!
-    authorId: ID!
   }
 
   input CommentPostField {
@@ -72,7 +73,7 @@ const resolversPost = {
           return JSON.parse(redisCache);
         }
 
-        const postList = await posts.find().toArray();
+        const postList = await posts.find().sort({ createdAt: -1 }).toArray();
 
         if (!postList) {
           throw new GraphQLError("Post not found", {
@@ -82,8 +83,8 @@ const resolversPost = {
             },
           });
         }
-
         redis.set("posts", JSON.stringify(postList));
+
         return postList;
       } catch (error) {
         throw error;
@@ -126,7 +127,7 @@ const resolversPost = {
   Mutation: {
     addPost: async (parent, args, contextValue) => {
       const auth = await contextValue.auth();
-      const { content, imgUrl, authorId } = args.fields;
+      const { content, imgUrl } = args.fields;
       try {
         if (!args.fields) {
           throw new GraphQLError("Please Input Mandatory Fields for create", {
@@ -143,7 +144,7 @@ const resolversPost = {
         const data = {
           content,
           imgUrl,
-          authorId,
+          authorId: new ObjectId(auth.id),
           tags: ["javascript", "php", "python"],
           comments: [],
           likes: [],
@@ -151,6 +152,7 @@ const resolversPost = {
           updatedAt: new Date(),
         };
 
+        console.log(auth.id);
         const post = await posts.insertOne(data);
         const result = await posts.findOne({
           _id: post.insertedId,
@@ -169,6 +171,7 @@ const resolversPost = {
 
         return result;
       } catch (error) {
+        console.log(error);
         throw error;
       }
     },
@@ -206,7 +209,6 @@ const resolversPost = {
             },
           }
         );
-
         redis.del("posts");
 
         return "Comment Success";
