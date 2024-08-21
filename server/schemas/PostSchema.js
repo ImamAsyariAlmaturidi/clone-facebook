@@ -73,7 +73,34 @@ const resolversPost = {
           return JSON.parse(redisCache);
         }
 
-        const postList = await posts.find().sort({ createdAt: -1 }).toArray();
+        const agg = [
+          {
+            $lookup: {
+              from: "users",
+              localField: "authorId",
+              foreignField: "_id",
+              as: "author",
+            },
+          },
+          {
+            $project: {
+              "author.password": 0,
+            },
+          },
+          {
+            $sort: {
+              createdAt: -1,
+            },
+          },
+          {
+            $unwind: {
+              path: "$author",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+        ];
+
+        const postList = await posts.aggregate(agg).toArray();
 
         if (!postList) {
           throw new GraphQLError("Post not found", {

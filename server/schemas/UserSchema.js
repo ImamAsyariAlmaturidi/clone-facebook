@@ -6,7 +6,7 @@ const { signToken } = require("../helpers/jwt");
 const typeDefsUser = `#graphql
   type User {
     _id: ID
-    name: String
+    name: String!
     username: String!
     email: String!
     password: String
@@ -36,6 +36,7 @@ const typeDefsUser = `#graphql
     users: [User]
     searchUserById: User
     searchUserByUsername(username: String!): [User]
+    getProfile: User
   }
 
   type Mutation {
@@ -101,6 +102,7 @@ const resolversUser = {
 
         const user = await users.aggregate(agg).toArray();
 
+        console.log(user);
         return user;
       } catch (error) {
         throw error;
@@ -274,6 +276,85 @@ const resolversUser = {
         throw error;
       }
     },
+
+    getProfile: async (parent, args, context) => {
+      const auth = await context.auth();
+      try {
+        const db = getDatabase();
+        const users = db.collection("users");
+
+        const agg = [
+          {
+            $match: {
+              _id: new ObjectId(auth.id),
+            },
+          },
+          {
+            $lookup: {
+              from: "follows",
+              localField: "_id",
+              foreignField: "followingId",
+              as: "followings",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "followings.followerId",
+              foreignField: "_id",
+              as: "followings",
+            },
+          },
+          {
+            $project: {
+              password: 0,
+              "followings.password": 0,
+            },
+          },
+          // {
+          //   $match: {
+          //     _id: new ObjectId("66c4741df1891494cee9219b"),
+          //   },
+          // },
+          {
+            $lookup: {
+              from: "follows",
+              localField: "_id",
+              foreignField: "followerId",
+              as: "followers",
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "followers.followingId",
+              foreignField: "_id",
+              as: "followers",
+            },
+          },
+          {
+            $project: {
+              "followers.password": 0,
+            },
+          },
+        ];
+
+        const user = await users.aggregate(agg).toArray();
+
+        if (user <= 0) {
+          throw new GraphQLError("User Not Found", {
+            extensions: {
+              code: "NOT FOUND",
+              http: { status: 404 },
+            },
+          });
+        }
+
+        return user[0];
+      } catch (error) {
+        throw error;
+      }
+    },
   },
 
   Mutation: {
@@ -348,8 +429,6 @@ const resolversUser = {
         };
 
         const token = signToken(payload);
-
-        console.log(token);
         return {
           message: "Login Successfully",
           access_token: token,
