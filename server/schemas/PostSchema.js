@@ -62,7 +62,8 @@ const typeDefsPost = `#graphql
 
 const resolversPost = {
   Query: {
-    posts: async () => {
+    posts: async (_, __, context) => {
+      const auth = await context.auth();
       try {
         const db = getDatabase();
         const posts = db.collection("posts");
@@ -117,7 +118,8 @@ const resolversPost = {
         throw error;
       }
     },
-    getPostById: async (parent, args) => {
+    getPostById: async (parent, args, context) => {
+      const auth = await context.auth();
       const { _id } = args.fields;
       try {
         if (!_id) {

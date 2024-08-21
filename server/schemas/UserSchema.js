@@ -49,7 +49,8 @@ const typeDefsUser = `#graphql
 
 const resolversUser = {
   Query: {
-    users: async () => {
+    users: async (_, __, context) => {
+      const auth = await context.auth();
       try {
         const db = getDatabase();
         const users = db.collection("users");
@@ -181,7 +182,8 @@ const resolversUser = {
       }
     },
 
-    searchUserByUsername: async (parent, args) => {
+    searchUserByUsername: async (parent, args, context) => {
+      const auth = await context.auth();
       const { username } = args;
       try {
         const db = getDatabase();

@@ -33,6 +33,15 @@ const resolversFollow = {
           _id: new ObjectId(followerId),
         });
 
+        if (followerId === auth.id) {
+          throw new GraphQLError("Cannot follow your self!", {
+            extensions: {
+              code: "BAD REQUEST",
+              http: { status: 400 },
+            },
+          });
+        }
+
         if (!user) {
           throw new GraphQLError("User not found", {
             extensions: {
