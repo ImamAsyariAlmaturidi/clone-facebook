@@ -1,11 +1,18 @@
 import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { Button as KittenButton } from "@ui-kitten/components";
-
-const KittenBTN = ({ text }) => {
+import { useNavigation } from "@react-navigation/native";
+const KittenBTN = ({ text, screen }) => {
+  const navigation = useNavigation();
   return (
     <View>
-      <KittenButton style={styles.kittenButton} appearance="outline">
+      <KittenButton
+        onPress={() => {
+          navigation.navigate(screen);
+        }}
+        style={styles.kittenButton}
+        appearance="outline"
+      >
         <Text style={styles.buttonText}>{text}</Text>
       </KittenButton>
     </View>

@@ -2,11 +2,11 @@ import React, { useState } from "react";
 import { Text, Button, Image, View, TextInput, StyleSheet } from "react-native";
 import KittenBTN from "../components/KittenBTN";
 import { SafeAreaView } from "react-native-safe-area-context";
-const Login = () => {
+const Register = () => {
   return (
     <SafeAreaView style={{ flex: 1, justifyContent: "center", alignItems: "center"}}>
       <Image width={300} height={200} style={{borderRadius: 20}} source={{ uri: "https://cdn.dribbble.com/users/3960463/screenshots/14784031/media/5b635a8de5c2402e5f49692ed4c1b414.gif"}}></Image>
-      <Text style={{ margin: 2, fontSize: 16, textAlign:"center", justifyContent: "center", letterSpacing: 2, fontWeight: "500"}}> Create account for join with friends, family, dan community peoples.</Text>
+      <Text style={{ margin: 2, fontSize: 16, textAlign:"center", justifyContent: "center", letterSpacing: 2, fontWeight: "500", marginTop: 15}}> Create account for join with friends, family, dan community peoples.</Text>
         <SafeAreaView>
         <TextInput style={styles.input} placeholder="Your email address"></TextInput>
         <TextInput style={styles.input} placeholder="Your full name"></TextInput>
@@ -16,7 +16,7 @@ const Login = () => {
           <Button color="#007AFF" title="Register"></Button>
         </View>
       <View style={styles.kittenButtonContainer}>
-      <KittenBTN text="Already have account? Login here"/>
+      <KittenBTN screen="Login" text="Already have account? Register here"/>
         </View>
       </SafeAreaView>
     </SafeAreaView>
@@ -53,4 +53,4 @@ const styles = StyleSheet.create({
 
 
 
-export default Login;
+export default Register;

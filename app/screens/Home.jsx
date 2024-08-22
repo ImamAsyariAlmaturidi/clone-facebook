@@ -1,11 +1,33 @@
 import React from "react";
-import { View } from "react-native";
+import { View, Text, TextInput, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import CardPost from "../components/CardPost";
+import Header from "../components/Header";
+import Post from "../components/Post";
 const Home = () => {
   return (
-    <View style={{ flex: 1, backgroundColor: "red", width: 4000, height: 100 }}>
-      <View style={{ flex: 1, backgroundColor: "white" }}></View>
-      <View style={{ flex: 4, backgroundColor: "yellow" }}></View>
-    </View>
+    <SafeAreaView
+      style={{
+        marginTop: -50,
+        backgroundColor: "white",
+        justifyContent: "center",
+        flex: 1,
+      }}
+    >
+      <Header />
+      <View style={{ flex: 1 }}>
+        <Post />
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "white",
+            justifyContent: "center",
+          }}
+        >
+          <CardPost />
+        </View>
+      </View>
+    </SafeAreaView>
   );
 };
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Image, StyleSheet, TextInput, Button as RNButton, Text } from 'react-native';
 import KittenBTN from '../components/KittenBTN';
 import { SafeAreaView } from "react-native-safe-area-context";
-const Register = () => {
+const Login = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.imageContainer}>
@@ -35,7 +35,7 @@ const Register = () => {
         />
       </View>
       <View style={styles.kittenButtonContainer}>
-        <KittenBTN text="Create new account"/>
+        <KittenBTN  screen="Register" text="Create new account"/>
       </View>
     </SafeAreaView>
   );
@@ -73,4 +73,4 @@ const styles = StyleSheet.create({
     width: 300,
   },
 });
-export default Register;
+export default Login;
