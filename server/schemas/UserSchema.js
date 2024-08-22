@@ -40,7 +40,7 @@ const typeDefsUser = `#graphql
   }
 
   type Mutation {
-  register(fields: RegisterField) : String
+  register(fields: RegisterField!) : String
   login(fields: LoginField) : ResponseLoginField
   }
 
@@ -361,14 +361,14 @@ const resolversUser = {
     register: async (parent, args) => {
       const { name, username, email, password } = args.fields;
       try {
-        if (!args) {
-          throw new GraphQLError("invalid input", {
-            extensions: {
-              code: "BAD REQUEST",
-              http: { status: 400 },
-            },
-          });
-        }
+        // if (!args) {
+        //   throw new GraphQLError("invalid input", {
+        //     extensions: {
+        //       code: "BAD REQUEST",
+        //       http: { status: 400 },
+        //     },
+        //   });
+        // }
         const db = getDatabase();
         const users = db.collection("users");
 
@@ -381,6 +381,7 @@ const resolversUser = {
 
         return "Success Create User";
       } catch (error) {
+        console.log(error);
         throw error;
       }
     },

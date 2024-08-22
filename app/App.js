@@ -1,40 +1,59 @@
-import React from 'react';
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View } from 'react-native';
-import * as eva from '@eva-design/eva';
-import Register from './screens/Register';
-import Login from './screens/Login';
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-const Tab = createMaterialTopTabNavigator();
-import Home from './screens/Home';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ApplicationProvider } from '@ui-kitten/components';
-import { NavigationContainer } from '@react-navigation/native';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import React, { useEffect, useState } from "react";
+import { StyleSheet, View } from "react-native";
+import * as eva from "@eva-design/eva";
+import Register from "./screens/Register";
+import Login from "./screens/Login";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { ApplicationProvider } from "@ui-kitten/components";
+import { NavigationContainer } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { ApolloProvider } from "@apollo/client";
+import { authContext } from "./context/authContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import client from "./config/apolloClient";
+import { StatusBar } from "expo-status-bar";
+import Home from "./screens/Home";
+import MainStack from "./navigators/MainStack";
 
+const Stack = createNativeStackNavigator();
 
 export default function App() {
-  const Tab = createMaterialTopTabNavigator();
-  const Stack = createNativeStackNavigator();
+  const [isLogin, setIsLogin] = useState(false);
+
+  useEffect(() => {
+    getToken();
+  }, []);
+
+  const getToken = async () => {
+    try {
+      const token = await AsyncStorage.getItem("access_token");
+      setIsLogin(!!token);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   return (
-    <NavigationContainer>
-    <ApplicationProvider {...eva} theme={eva.dark}>
-      <SafeAreaProvider>
-      <Stack.Navigator>
-      {/* <Tab.Navigator> */}
-      {/* <Stack.Screen name="Register" component={Register} /> */}
-        <Stack.Screen name="Home" component={Home} />
-      {/* </Tab.Navigator> */}
-      {/* <Stack.Screen name="Login" component={Login} /> */}
-      </Stack.Navigator>
-      </SafeAreaProvider>
-    </ApplicationProvider>
-    </NavigationContainer>
+    <ApolloProvider client={client}>
+      <authContext.Provider value={{ isLogin, setIsLogin }}>
+        <ApplicationProvider {...eva} theme={eva.dark}>
+          <SafeAreaProvider>
+            <StatusBar style="auto" />
+            <NavigationContainer>
+              <Stack.Navigator screenOptions={{ headerShown: false }}>
+                {isLogin ? (
+                  <Stack.Screen name="MainStack" component={MainStack} />
+                ) : (
+                  <>
+                    <Stack.Screen name="Login" component={Login} />
+                    <Stack.Screen name="Register" component={Register} />
+                  </>
+                )}
+              </Stack.Navigator>
+            </NavigationContainer>
+          </SafeAreaProvider>
+        </ApplicationProvider>
+      </authContext.Provider>
+    </ApolloProvider>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
