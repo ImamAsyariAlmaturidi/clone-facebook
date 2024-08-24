@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -7,15 +7,40 @@ import {
   FlatList,
   TextInput,
   TouchableOpacity,
-  Button,
+  ActivityIndicator,
 } from "react-native";
 import { Avatar } from "@ui-kitten/components";
-import { SimpleLineIcons, EvilIcons, Ionicons } from "@expo/vector-icons";
-import { gql, useMutation, useLazyQuery } from "@apollo/client";
+import { SimpleLineIcons, Ionicons } from "@expo/vector-icons";
+import { gql, useMutation, useQuery } from "@apollo/client";
 import ShimmerPlaceHolder from "react-native-shimmer-placeholder";
 import { useNavigation } from "@react-navigation/native";
-import { TouchableWeb } from "@ui-kitten/components/devsupport";
 import * as ImagePicker from "expo-image-picker";
+import { TouchableWeb } from "@ui-kitten/components/devsupport";
+
+const FOLLOW = gql`
+  mutation Follow($fields: AddFollowField) {
+    follow(fields: $fields) {
+      _id
+    }
+  }
+`;
+
+const GET_PROFILE = gql`
+  query GetProfile {
+    getProfile {
+      _id
+      name
+      username
+      email
+      followers {
+        _id
+      }
+      followings {
+        _id
+      }
+    }
+  }
+`;
 
 const LIKE_POST = gql`
   mutation LikePost($fields: LikePostField) {
@@ -66,21 +91,47 @@ const CardPost = () => {
   const [image, setImage] = useState(null);
   const [textPost, setTextPost] = useState("");
   const navigation = useNavigation();
-  const [reload, { data, loading, error }] = useLazyQuery(GET_ALL_POST);
+
+  const {
+    data: profileData,
+    loading: profileLoading,
+    refetch: refetchProfile,
+  } = useQuery(GET_PROFILE);
+  const {
+    data,
+    loading,
+    error,
+    refetch: refetchPosts,
+  } = useQuery(GET_ALL_POST);
+
+  const [funcFollow] = useMutation(FOLLOW, {
+    onCompleted: () => {
+      refetchProfile();
+      refetchPosts();
+    },
+    onError: (error) => console.log("Follow error:", error.message),
+  });
+
   const [funcAddLike] = useMutation(LIKE_POST, {
-    refetchQueries: [GET_ALL_POST],
+    onError: (error) => console.log("Like error:", error.message),
   });
 
   const [funcAddPost] = useMutation(ADD_POST, {
-    refetchQueries: [GET_ALL_POST],
     onCompleted: () => {
       setTextPost("");
       setImage(null);
+      refetchPosts();
     },
-    onError: (error) => {
-      console.error(error);
-    },
+    onError: (error) => console.log("Add Post error:", error.message),
   });
+
+  const follow = async (followerId) => {
+    try {
+      await funcFollow({ variables: { fields: { followerId } } });
+    } catch (error) {
+      console.log("Follow error:", error.message);
+    }
+  };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -96,12 +147,12 @@ const CardPost = () => {
   };
 
   const handleSubmitEditing = () => {
-    if (textPost.trim().length > 0) {
+    if (textPost.trim()) {
       post();
     }
   };
 
-  async function post() {
+  const post = async () => {
     try {
       await funcAddPost({
         variables: {
@@ -112,50 +163,34 @@ const CardPost = () => {
         },
       });
     } catch (error) {
-      console.error(error);
+      console.log("Post error:", error.message);
     }
-  }
+  };
 
-  const showDetail = (
-    postId,
-    author,
-    content,
-    createdAt,
-    imgUrl,
-    totalLikes,
-    totalComments
-  ) => {
-    navigation.navigate("Detail", {
-      postId,
-      author,
-      content,
-      createdAt,
-      imgUrl,
-      totalLikes,
-      totalComments,
-    });
+  const showDetail = (postId) => {
+    navigation.navigate("Detail", { postId });
   };
 
   const like = async (postId) => {
     try {
-      await funcAddLike({
-        variables: {
-          fields: {
-            postId,
-          },
-        },
-      });
-      await reload();
+      await funcAddLike({ variables: { fields: { postId } } });
+      refetchPosts();
     } catch (error) {
-      console.error(error);
+      console.log("Like error:", error.message);
     }
   };
 
-  useEffect(() => {
-    reload();
-  }, []);
+  const isFollowing = (authorId) => {
+    const following = profileData?.getProfile?.followings || [];
+    return following.some((following) => following._id === authorId);
+  };
 
-  if (loading) {
+  useEffect(() => {
+    refetchPosts();
+    refetchProfile();
+  }, [refetchPosts, refetchProfile]);
+
+  if (loading || profileLoading) {
     return (
       <View style={styles.container}>
         <View style={styles.inputContainer}>
@@ -169,7 +204,7 @@ const CardPost = () => {
             placeholderTextColor="#888"
             onSubmitEditing={handleSubmitEditing}
             value={textPost}
-            onChangeText={(item) => setTextPost(item)}
+            onChangeText={(text) => setTextPost(text)}
           />
         </View>
         <FlatList
@@ -246,15 +281,15 @@ const CardPost = () => {
                 placeholderTextColor="#888"
                 onSubmitEditing={handleSubmitEditing}
                 value={textPost}
-                onChangeText={(item) => setTextPost(item)}
+                onChangeText={(text) => setTextPost(text)}
               />
-              <TouchableWeb onPress={pickImage}>
+              <TouchableOpacity onPress={pickImage}>
                 <Ionicons
                   name="image-outline"
                   size={40}
                   style={{ marginLeft: 4 }}
                 />
-              </TouchableWeb>
+              </TouchableOpacity>
             </View>
             {image && <Image source={{ uri: image }} style={styles.image} />}
           </>
@@ -267,22 +302,33 @@ const CardPost = () => {
                 style={styles.avatar}
               />
               <View style={styles.headerText}>
-                <Text style={styles.authorName}>{item.author?.name}</Text>
+                <View style={styles.headerRow}>
+                  <Text style={styles.authorName}>{item.author?.name}</Text>
+                  {item.author._id !== profileData?.getProfile._id &&
+                    !isFollowing(item.author._id) && (
+                      <TouchableOpacity
+                        onPress={() => follow(item.author._id)}
+                        style={styles.authorName}
+                      >
+                        <Text style={styles.followText}>Follow</Text>
+                      </TouchableOpacity>
+                    )}
+                </View>
                 <Text style={styles.content} numberOfLines={3}>
                   {item.content}
                 </Text>
                 <Text style={styles.date}>
                   {item.createdAt
                     ? new Date(item.createdAt).toLocaleString("id-ID", {
-                        weekday: "long",
+                        weekday: "short",
                         year: "numeric",
-                        month: "long",
+                        month: "short",
                         day: "numeric",
                         hour: "2-digit",
                         minute: "2-digit",
                         second: "2-digit",
                       })
-                    : "Sekarang"}
+                    : "Now"}
                 </Text>
               </View>
             </View>
@@ -292,34 +338,21 @@ const CardPost = () => {
               </TouchableWeb>
             )}
             <View style={styles.actionsContainer}>
-              <TouchableWeb
+              <TouchableOpacity
                 style={styles.actionItem}
                 onPress={() => like(item._id)}
               >
-                <SimpleLineIcons name="like" size={24} color="black" />
+                <SimpleLineIcons name="like" size={20} color="blue" />
                 <Text style={styles.actionText}>{item.likes.length}</Text>
-              </TouchableWeb>
-              <TouchableWeb
+              </TouchableOpacity>
+              <TouchableOpacity
                 style={styles.actionItem}
                 onPress={() => showDetail(item._id)}
               >
-                <EvilIcons name="comment" size={30} color="black" />
+                <SimpleLineIcons name="bubble" size={20} color="blue" />
                 <Text style={styles.actionText}>{item.comments.length}</Text>
-              </TouchableWeb>
+              </TouchableOpacity>
             </View>
-            {item.comments.length > 0 && (
-              <View style={styles.commentSection}>
-                <Text style={styles.commentHeader}> Latest Comment: </Text>
-                <View style={styles.commentContainer}>
-                  <Text style={styles.commentContent}>
-                    {item.comments[item.comments.length - 1]?.content}
-                  </Text>
-                  <Text style={styles.commentUsername}>
-                    {item.comments[item.comments.length - 1]?.username}
-                  </Text>
-                </View>
-              </View>
-            )}
           </View>
         )}
       />
@@ -370,10 +403,20 @@ const styles = StyleSheet.create({
   headerText: {
     flex: 1,
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
   authorName: {
     fontWeight: "bold",
     fontSize: 18,
     color: "#333",
+  },
+  followText: {
+    paddingTop: 3,
+    color: "blue",
+    fontWeight: "bold",
+    letterSpacing: 2,
   },
   content: {
     fontSize: 16,

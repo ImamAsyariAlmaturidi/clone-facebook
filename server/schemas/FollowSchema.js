@@ -75,6 +75,7 @@ const resolversFollow = {
         const result = await follows.findOne({
           _id: follow.insertedId,
         });
+
         return result;
       } catch (error) {
         throw error;
