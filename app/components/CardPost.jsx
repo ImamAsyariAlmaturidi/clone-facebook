@@ -1,23 +1,37 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   Image,
   StyleSheet,
   FlatList,
+  TextInput,
   TouchableOpacity,
-  ScrollView,
+  Button,
 } from "react-native";
 import { Avatar } from "@ui-kitten/components";
-import { SimpleLineIcons, EvilIcons } from "@expo/vector-icons";
+import { SimpleLineIcons, EvilIcons, Ionicons } from "@expo/vector-icons";
 import { gql, useMutation, useLazyQuery } from "@apollo/client";
 import ShimmerPlaceHolder from "react-native-shimmer-placeholder";
 import { useNavigation } from "@react-navigation/native";
 import { TouchableWeb } from "@ui-kitten/components/devsupport";
+import * as ImagePicker from "expo-image-picker";
 
 const LIKE_POST = gql`
   mutation LikePost($fields: LikePostField) {
     likePost(fields: $fields)
+  }
+`;
+
+const ADD_POST = gql`
+  mutation AddPost($fields: AddPostField) {
+    addPost(fields: $fields) {
+      _id
+      content
+      imgUrl
+      createdAt
+      updatedAt
+    }
   }
 `;
 
@@ -49,11 +63,58 @@ const GET_ALL_POST = gql`
 `;
 
 const CardPost = () => {
+  const [image, setImage] = useState(null);
+  const [textPost, setTextPost] = useState("");
   const navigation = useNavigation();
   const [reload, { data, loading, error }] = useLazyQuery(GET_ALL_POST);
   const [funcAddLike] = useMutation(LIKE_POST, {
     refetchQueries: [GET_ALL_POST],
   });
+
+  const [funcAddPost] = useMutation(ADD_POST, {
+    refetchQueries: [GET_ALL_POST],
+    onCompleted: () => {
+      setTextPost("");
+      setImage(null);
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+  });
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImage(result.assets[0].uri);
+    }
+  };
+
+  const handleSubmitEditing = () => {
+    if (textPost.trim().length > 0) {
+      post();
+    }
+  };
+
+  async function post() {
+    try {
+      await funcAddPost({
+        variables: {
+          fields: {
+            content: textPost,
+            imgUrl: image || "",
+          },
+        },
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   const showDetail = (
     postId,
@@ -84,10 +145,9 @@ const CardPost = () => {
           },
         },
       });
-
       await reload();
     } catch (error) {
-      console.log(error);
+      console.error(error);
     }
   };
 
@@ -98,6 +158,20 @@ const CardPost = () => {
   if (loading) {
     return (
       <View style={styles.container}>
+        <View style={styles.inputContainer}>
+          <Avatar
+            source={require("../assets/logos.png")}
+            style={styles.avatar}
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="What do you think?"
+            placeholderTextColor="#888"
+            onSubmitEditing={handleSubmitEditing}
+            value={textPost}
+            onChangeText={(item) => setTextPost(item)}
+          />
+        </View>
         <FlatList
           data={Array.from({ length: 5 })}
           renderItem={() => (
@@ -159,6 +233,32 @@ const CardPost = () => {
       <FlatList
         data={data?.posts}
         keyExtractor={(item) => item._id}
+        ListHeaderComponent={
+          <>
+            <View style={styles.inputContainer}>
+              <Avatar
+                source={require("../assets/logos.png")}
+                style={styles.avatar}
+              />
+              <TextInput
+                style={styles.input}
+                placeholder="What do you think?"
+                placeholderTextColor="#888"
+                onSubmitEditing={handleSubmitEditing}
+                value={textPost}
+                onChangeText={(item) => setTextPost(item)}
+              />
+              <TouchableWeb onPress={pickImage}>
+                <Ionicons
+                  name="image-outline"
+                  size={40}
+                  style={{ marginLeft: 4 }}
+                />
+              </TouchableWeb>
+            </View>
+            {image && <Image source={{ uri: image }} style={styles.image} />}
+          </>
+        }
         renderItem={({ item }) => (
           <View style={styles.postContainer}>
             <View style={styles.header}>
@@ -209,23 +309,12 @@ const CardPost = () => {
             </View>
             {item.comments.length > 0 && (
               <View style={styles.commentSection}>
-                <TouchableWeb>
-                  <Text style={styles.commentHeader}> Latest Comment: </Text>
-                </TouchableWeb>
-                <View
-                  style={styles.commentContainer}
-                  onPress={() => showDetail(item._id)}
-                >
-                  <Text
-                    style={styles.commentContent}
-                    onPress={() => showDetail(item._id)}
-                  >
+                <Text style={styles.commentHeader}> Latest Comment: </Text>
+                <View style={styles.commentContainer}>
+                  <Text style={styles.commentContent}>
                     {item.comments[item.comments.length - 1]?.content}
                   </Text>
-                  <Text
-                    style={styles.commentUsername}
-                    onPress={() => showDetail(item._id)}
-                  >
+                  <Text style={styles.commentUsername}>
                     {item.comments[item.comments.length - 1]?.username}
                   </Text>
                 </View>
@@ -244,26 +333,39 @@ const styles = StyleSheet.create({
     backgroundColor: "#F9F9F9",
     padding: 10,
   },
-  postContainer: {
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: "#FFFFFF",
-    marginBottom: 15,
+    justifyContent: "space-between",
+    width: "100%",
+    padding: 20,
     borderRadius: 10,
+    marginBottom: 15,
     shadowColor: "#000000",
     shadowOpacity: 0.1,
     shadowRadius: 10,
     elevation: 2,
-    paddingBottom: 15,
   },
-  header: {
-    flexDirection: "row",
-    padding: 15,
-    alignItems: "center",
+  input: {
+    flex: 1,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: "black",
+    borderRadius: 10,
+    padding: 10,
+    backgroundColor: "#FFFFFF",
   },
   avatar: {
     width: 45,
     height: 45,
     borderRadius: 22.5,
     marginRight: 10,
+  },
+  header: {
+    flexDirection: "row",
+    padding: 15,
+    alignItems: "center",
   },
   headerText: {
     flex: 1,

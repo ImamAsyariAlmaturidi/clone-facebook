@@ -32,7 +32,7 @@ const typeDefsPost = `#graphql
   
   input AddPostField {
     content: String!
-    imgUrl: String!
+    imgUrl: String
   }
 
   input CommentPostField {

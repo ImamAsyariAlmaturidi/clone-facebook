@@ -208,7 +208,7 @@ const Comments = ({ postId }) => {
           </View>
           <View style={styles.commentSection}>
             {comments.length > 0 ? (
-              comments.slice(-10).map((item, index) => (
+              comments.slice(-7).map((item, index) => (
                 <View key={index} style={styles.commentItem}>
                   <Text style={styles.commentContent}>
                     {item.content || "No content"}
