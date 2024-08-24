@@ -121,6 +121,8 @@ const resolversPost = {
     getPostById: async (parent, args, context) => {
       const auth = await context.auth();
       const { _id } = args.fields;
+
+      console.log(_id);
       try {
         if (!_id) {
           throw new GraphQLError("Invalid input", {
@@ -134,9 +136,39 @@ const resolversPost = {
         const db = getDatabase();
         const posts = db.collection("posts");
 
-        const post = await posts.findOne({
-          _id: new ObjectId(_id),
-        });
+        const agg = [
+          {
+            $match: {
+              _id: new ObjectId(_id),
+            },
+          },
+          {
+            $lookup: {
+              from: "users",
+              localField: "authorId",
+              foreignField: "_id",
+              as: "author",
+            },
+          },
+          {
+            $project: {
+              "author.password": 0,
+            },
+          },
+          {
+            $sort: {
+              createdAt: -1,
+            },
+          },
+          {
+            $unwind: {
+              path: "$author",
+              preserveNullAndEmptyArrays: true,
+            },
+          },
+        ];
+
+        const post = await posts.aggregate(agg).toArray();
 
         if (!post) {
           throw new GraphQLError("Post not found", {
@@ -147,7 +179,7 @@ const resolversPost = {
           });
         }
 
-        return post;
+        return post[0];
       } catch (error) {
         throw error;
       }

@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { authContext } from "../context/authContext";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const Header = () => {
   const navigation = useNavigation();
   const { setIsLogin } = useContext(authContext);
@@ -45,7 +46,13 @@ const Header = () => {
           width: 140,
         }}
       >
-        <Ionicons name="person" size={25} />
+        <Ionicons
+          name="person"
+          size={25}
+          onPress={() => {
+            navigation.navigate("Profile");
+          }}
+        />
         <Ionicons name="log-out" size={25} onPress={logout} />
       </View>
     </View>

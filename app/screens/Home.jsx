@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import CardPost from "../components/CardPost";
 import Header from "../components/Header";
 import Post from "../components/Post";
+
 const Home = ({ navigation }) => {
   return (
     <SafeAreaView
@@ -21,6 +22,7 @@ const Home = ({ navigation }) => {
             flex: 1,
             backgroundColor: "white",
             justifyContent: "center",
+            marginTop: 20,
           }}
         >
           <CardPost />
