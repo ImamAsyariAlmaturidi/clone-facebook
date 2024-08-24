@@ -353,6 +353,22 @@ const CardPost = () => {
                 <Text style={styles.actionText}>{item.comments.length}</Text>
               </TouchableOpacity>
             </View>
+            {item.comments.length > 0 && (
+              <TouchableOpacity
+                onPress={() => showDetail(item._id)}
+                style={styles.commentSection}
+              >
+                <Text style={styles.commentHeader}> Latest Comment: </Text>
+                <View style={styles.commentContainer}>
+                  <Text style={styles.commentContent}>
+                    {item.comments[item.comments.length - 1]?.content}
+                  </Text>
+                  <Text style={styles.commentUsername}>
+                    {item.comments[item.comments.length - 1]?.username}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       />
