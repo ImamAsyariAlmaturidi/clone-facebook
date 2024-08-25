@@ -92,37 +92,19 @@ const CardPost = () => {
   const [textPost, setTextPost] = useState("");
   const navigation = useNavigation();
 
-  const {
-    data: profileData,
-    loading: profileLoading,
-    refetch: refetchProfile,
-  } = useQuery(GET_PROFILE);
-  const {
-    data,
-    loading,
-    error,
-    refetch: refetchPosts,
-  } = useQuery(GET_ALL_POST);
+  const { data: profileData, loading: profileLoading } = useQuery(GET_PROFILE);
+  const { data, loading, error } = useQuery(GET_ALL_POST);
 
   const [funcFollow] = useMutation(FOLLOW, {
-    onCompleted: () => {
-      refetchProfile();
-      refetchPosts();
-    },
-    onError: (error) => console.log("Follow error:", error.message),
+    refetchQueries: [GET_ALL_POST],
   });
 
   const [funcAddLike] = useMutation(LIKE_POST, {
-    onError: (error) => console.log("Like error:", error.message),
+    refetchQueries: [GET_ALL_POST],
   });
 
   const [funcAddPost] = useMutation(ADD_POST, {
-    onCompleted: () => {
-      setTextPost("");
-      setImage(null);
-      refetchPosts();
-    },
-    onError: (error) => console.log("Add Post error:", error.message),
+    refetchQueries: [GET_ALL_POST],
   });
 
   const follow = async (followerId) => {
@@ -162,8 +144,10 @@ const CardPost = () => {
           },
         },
       });
+      setImage("");
+      setTextPost("");
     } catch (error) {
-      console.log("Post error:", error.message);
+      console.log(error);
     }
   };
 
@@ -174,7 +158,6 @@ const CardPost = () => {
   const like = async (postId) => {
     try {
       await funcAddLike({ variables: { fields: { postId } } });
-      refetchPosts();
     } catch (error) {
       console.log("Like error:", error.message);
     }
@@ -185,10 +168,7 @@ const CardPost = () => {
     return following.some((following) => following._id === authorId);
   };
 
-  useEffect(() => {
-    refetchPosts();
-    refetchProfile();
-  }, [refetchPosts, refetchProfile]);
+  useEffect(() => {});
 
   if (loading || profileLoading) {
     return (
@@ -291,11 +271,13 @@ const CardPost = () => {
                 />
               </TouchableOpacity>
             </View>
-            {image && <Image source={{ uri: image }} style={styles.image} />}
+            <View style={{ borderBottomWidth: 2, borderColor: "gray" }}>
+              {image && <Image source={{ uri: image }} style={styles.image} />}
+            </View>
           </>
         }
         renderItem={({ item }) => (
-          <View style={styles.postContainer}>
+          <View>
             <View style={styles.header}>
               <Avatar
                 source={require("../assets/logos.png")}
@@ -385,7 +367,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    // backgroundColor: "#FFFFFF",
     justifyContent: "space-between",
     width: "100%",
     padding: 20,

@@ -1,9 +1,16 @@
 import React from "react";
-import { View, Text, TextInput, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useQuery, gql, useMutation } from "@apollo/client";
 import { Avatar } from "@ui-kitten/components";
 import ShimmerPlaceHolder from "react-native-shimmer-placeholder";
+
 const GET_PROFILE = gql`
   query GetProfile {
     getProfile {
@@ -30,14 +37,10 @@ const GET_PROFILE = gql`
 const Profile = () => {
   const { data, loading, error } = useQuery(GET_PROFILE);
 
-  if (loading) {
+  if (loading)
     return (
-      <View>
-        <Text>Loading...</Text>
-      </View>
+      <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
     );
-  }
-
   if (error) {
     return (
       <View>
@@ -115,6 +118,11 @@ const styles = StyleSheet.create({
   followText: {
     fontSize: 16,
     color: "#555555",
+  },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   statsContainer: {
     flex: 4,

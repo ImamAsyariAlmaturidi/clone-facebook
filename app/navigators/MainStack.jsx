@@ -8,7 +8,7 @@ import {
   GestureHandlerRootView,
 } from "react-native-gesture-handler";
 import { GestureDetectorProvider } from "react-native-screens/gesture-handler";
-
+import Search from "../screens/Search";
 const Stack = createNativeStackNavigator();
 export default function MainStack() {
   const config = {
@@ -53,6 +53,7 @@ export default function MainStack() {
             screenOptions={{ headerShown: true }}
             options={{
               headerBackTitleVisible: false,
+              animation: "slide_from_right",
               headerTitle: "",
               transitionSpec: {
                 headerShown: false,
@@ -67,6 +68,19 @@ export default function MainStack() {
             options={{
               headerBackTitleVisible: false,
               headerTitle: "",
+              transitionSpec: {
+                open: config,
+                close: config,
+              },
+            }}
+          />
+          <Stack.Screen
+            name={"Search"}
+            component={Search}
+            options={{
+              headerBackTitleVisible: false,
+              headerTitle: "",
+              animation: "slide_from_bottom",
               transitionSpec: {
                 open: config,
                 close: config,
