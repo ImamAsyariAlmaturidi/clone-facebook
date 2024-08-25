@@ -34,8 +34,7 @@ const GET_PROFILE = gql`
     }
   }
 `;
-const Profile = ({ route, navigation }) => {
-  const { userId } = route.params;
+const MyProfile = () => {
   const { data, loading, error } = useQuery(GET_PROFILE);
 
   if (loading)
@@ -158,4 +157,4 @@ const styles = StyleSheet.create({
     color: "#FF0000",
   },
 });
-export default Profile;
+export default MyProfile;

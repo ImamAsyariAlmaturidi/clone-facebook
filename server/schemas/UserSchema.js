@@ -34,7 +34,7 @@ const typeDefsUser = `#graphql
 
   type Query {
     users: [User]
-    searchUserById: User
+    searchUserById(userId: String!): User
     searchUserByUsername(username: String!): [User]
     getProfile: User
   }
@@ -110,6 +110,7 @@ const resolversUser = {
 
     searchUserById: async (parent, args, context) => {
       const auth = await context.auth();
+      const { userId } = args;
       try {
         const db = getDatabase();
         const users = db.collection("users");
@@ -117,7 +118,7 @@ const resolversUser = {
         const agg = [
           {
             $match: {
-              _id: new ObjectId(auth.id),
+              _id: new ObjectId(userId),
             },
           },
           {

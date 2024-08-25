@@ -1,6 +1,6 @@
 import Home from "../screens/Home";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import Profile from "../screens/Profile";
+import MyProfile from "../screens/MyProfile";
 import Detail from "../screens/Detail";
 import { Button } from "@ui-kitten/components";
 import {
@@ -48,8 +48,23 @@ export default function MainStack() {
             }}
           />
           <Stack.Screen
+            name={"MyProfile"}
+            component={MyProfile}
+            screenOptions={{ headerShown: true }}
+            options={{
+              headerBackTitleVisible: false,
+              animation: "slide_from_right",
+              headerTitle: "",
+              transitionSpec: {
+                headerShown: false,
+                open: config,
+                close: config,
+              },
+            }}
+          />
+          <Stack.Screen
             name={"Profile"}
-            component={Profile}
+            component={"Profile"}
             screenOptions={{ headerShown: true }}
             options={{
               headerBackTitleVisible: false,

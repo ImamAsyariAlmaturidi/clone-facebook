@@ -9,7 +9,7 @@ import { setContext } from "@apollo/client/link/context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 // Membuat HttpLink untuk endpoint GraphQL
 const httpLink = new HttpLink({
-  uri: "https://kgk0h39c-3000.asse.devtunnels.ms/",
+  uri: "https://graphql.imam-asyari.online/",
 });
 
 // Membuat link context untuk menambahkan header

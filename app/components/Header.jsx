@@ -52,7 +52,7 @@ const Header = () => {
             name="person"
             size={25}
             onPress={() => {
-              navigation.navigate("Profile");
+              navigation.navigate("MyProfile");
             }}
           />
           <Ionicons name="log-out" size={25} onPress={logout} />
