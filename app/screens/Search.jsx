@@ -117,8 +117,8 @@ const Search = ({ navigation }) => {
           marginHorizontal: 30,
           padding: 1,
           marginTop: 20,
-          borderTopWidth: "0",
-          borderBottomWidth: "0",
+          borderTopWidth: 0,
+          borderBottomWidth: 0,
         }}
         inputContainerStyle={{
           backgroundColor: "#e0e0e0",
