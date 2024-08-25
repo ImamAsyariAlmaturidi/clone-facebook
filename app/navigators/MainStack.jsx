@@ -9,6 +9,7 @@ import {
 } from "react-native-gesture-handler";
 import { GestureDetectorProvider } from "react-native-screens/gesture-handler";
 import Search from "../screens/Search";
+import Profile from "../screens/Profile";
 const Stack = createNativeStackNavigator();
 export default function MainStack() {
   const config = {
@@ -64,7 +65,7 @@ export default function MainStack() {
           />
           <Stack.Screen
             name={"Profile"}
-            component={"Profile"}
+            component={Profile}
             screenOptions={{ headerShown: true }}
             options={{
               headerBackTitleVisible: false,

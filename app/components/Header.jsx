@@ -5,13 +5,13 @@ import { authContext } from "../context/authContext";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SearchBar } from "react-native-elements";
-import { ActivityIndicator } from "react-native";
 const Header = () => {
   const navigation = useNavigation();
   const { setIsLogin } = useContext(authContext);
   async function logout() {
     try {
       await AsyncStorage.clear();
+
       setIsLogin(false);
       navigation.navigate("Login");
     } catch (error) {

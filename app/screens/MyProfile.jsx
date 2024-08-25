@@ -1,15 +1,13 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useQuery, gql, useMutation } from "@apollo/client";
+import { useQuery, gql } from "@apollo/client";
 import { Avatar } from "@ui-kitten/components";
-import ShimmerPlaceHolder from "react-native-shimmer-placeholder";
 
 const GET_PROFILE = gql`
   query GetProfile {
@@ -34,6 +32,7 @@ const GET_PROFILE = gql`
     }
   }
 `;
+
 const MyProfile = () => {
   const { data, loading, error } = useQuery(GET_PROFILE);
 
@@ -41,36 +40,61 @@ const MyProfile = () => {
     return (
       <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
     );
+
   if (error) {
     return (
-      <View>
-        <Text>Error...</Text>
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Error loading profile...</Text>
       </View>
     );
   }
+
+  const { getProfile } = data;
+
   return (
     <View style={styles.container}>
       <View style={styles.profileInfo}>
         <Avatar
           source={
-            data.getProfile.imgUrl?.length > 0
-              ? { uri: data.getProfile.imgUrl }
+            getProfile.imgUrl?.length > 0
+              ? { uri: getProfile.imgUrl }
               : require("../assets/logos.png")
           }
           style={styles.avatar}
         />
-        <Text style={styles.username}>{data.getProfile.username}</Text>
+        <Text style={styles.username}>{getProfile.username}</Text>
         <View style={styles.followInfo}>
           <Text style={styles.followText}>
-            Following: {data.getProfile.followings.length}
+            Following: {getProfile.followings.length}
           </Text>
           <Text style={styles.followText}>
-            Followers: {data.getProfile.followers.length}
+            Followers: {getProfile.followers.length}
           </Text>
         </View>
       </View>
       <View style={styles.statsContainer}>
-        <Text style={styles.statsText}>All Post</Text>
+        <Text style={styles.statsText}>Followers</Text>
+        <FlatList
+          data={getProfile.followers}
+          renderItem={({ item }) => (
+            <View style={styles.listItem}>
+              <Text style={styles.listItemText}>{item.name}</Text>
+              <Text style={styles.listItemUsername}>@{item.username}</Text>
+            </View>
+          )}
+          keyExtractor={(item) => item._id}
+        />
+        <Text style={styles.statsText}>Following</Text>
+        <FlatList
+          data={getProfile.followings}
+          renderItem={({ item }) => (
+            <View style={styles.listItem}>
+              <Text style={styles.listItemText}>{item.name}</Text>
+              <Text style={styles.listItemUsername}>@{item.username}</Text>
+            </View>
+          )}
+          keyExtractor={(item) => item._id}
+        />
       </View>
     </View>
   );
@@ -80,16 +104,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F5F5F5",
-    alignItems: "center",
-    justifyContent: "center",
     padding: 16,
   },
   profileInfo: {
-    flex: 2,
-    width: "100%",
     alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 24,
+    padding: 24,
     backgroundColor: "#FFFFFF",
     borderRadius: 10,
     shadowColor: "#000000",
@@ -97,17 +116,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 4,
+    marginBottom: 16,
   },
   avatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
+    marginBottom: 12,
   },
   username: {
     fontSize: 32,
     fontWeight: "bold",
     color: "#333333",
-    marginVertical: 8,
+    marginBottom: 8,
   },
   followInfo: {
     flexDirection: "row",
@@ -119,22 +140,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#555555",
   },
-  loader: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
   statsContainer: {
-    flex: 4,
-    marginTop: 5,
-    width: "100%",
+    flex: 1,
     backgroundColor: "#FFFFFF",
-    justifyContent: "center",
-    alignItems: "center",
     borderTopWidth: 2,
     borderTopColor: "#DDDDDD",
-    padding: 16,
     borderRadius: 10,
+    padding: 16,
     shadowColor: "#000000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -142,19 +154,34 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   statsText: {
-    fontSize: 30,
+    fontSize: 24,
     color: "#333333",
-    marginVertical: 4,
     fontWeight: "bold",
-    letterSpacing: 10,
+    marginVertical: 8,
   },
-  loadingText: {
-    fontSize: 18,
+  listItem: {
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#DDDDDD",
+  },
+  listItemText: {
+    fontSize: 16,
+    color: "#333333",
+  },
+  listItemUsername: {
+    fontSize: 14,
     color: "#888888",
+  },
+  loader: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   errorText: {
     fontSize: 18,
     color: "#FF0000",
+    textAlign: "center",
   },
 });
+
 export default MyProfile;

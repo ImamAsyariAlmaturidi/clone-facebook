@@ -1,16 +1,18 @@
-import React, { useCallback, useContext, useState } from "react";
+import React, { useContext, useState } from "react";
 import {
   View,
   Image,
   StyleSheet,
   TextInput,
   Button as RNButton,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useMutation, gql } from "@apollo/client";
+import { useMutation, gql, useLazyQuery } from "@apollo/client";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import KittenBTN from "../components/KittenBTN";
 import { authContext } from "../context/authContext";
+
 const LOGIN_MUTATION = gql`
   mutation Login($fields: LoginField) {
     login(fields: $fields) {
@@ -20,25 +22,41 @@ const LOGIN_MUTATION = gql`
   }
 `;
 
+const GET_PROFILE = gql`
+  query GetProfile {
+    getProfile {
+      _id
+      name
+      username
+      email
+      followers {
+        _id
+        name
+        username
+        email
+      }
+      followings {
+        _id
+        name
+        username
+        email
+      }
+    }
+  }
+`;
+
 const Login = ({ navigation }) => {
   const { setIsLogin } = useContext(authContext);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [funcLogin] = useMutation(LOGIN_MUTATION, {
-    onCompleted: async (response) => {
-      try {
-        await AsyncStorage.setItem("access_token", response.login.access_token);
-        setIsLogin(true);
-        navigation.navigate("MainStack");
-      } catch (error) {
-        console.log(error);
-      }
-    },
-  });
+  const [funcGetProfile, { loading: profileLoading }] =
+    useLazyQuery(GET_PROFILE);
+  const [funcLogin, { loading: loginLoading, error: loginError }] =
+    useMutation(LOGIN_MUTATION);
 
   const handleLogin = async () => {
     try {
-      await funcLogin({
+      const { data } = await funcLogin({
         variables: {
           fields: {
             email,
@@ -46,6 +64,13 @@ const Login = ({ navigation }) => {
           },
         },
       });
+
+      await AsyncStorage.setItem("access_token", data.login.access_token);
+
+      const profileResponse = await funcGetProfile();
+
+      setIsLogin(true);
+      navigation.navigate("MainStack");
     } catch (error) {
       console.log(error);
     }
@@ -78,12 +103,17 @@ const Login = ({ navigation }) => {
           secureTextEntry
         />
       </View>
-      <View style={{ width: 300, borderRadius: 300 }}>
-        <RNButton color="#007AFF" title="Login" onPress={handleLogin} />
+      <View style={styles.buttonContainer}>
+        <RNButton
+          color="#007AFF"
+          title={loginLoading ? "Logging in..." : "Login"}
+          onPress={handleLogin}
+          disabled={loginLoading}
+        />
       </View>
 
-      <View style={{ width: 300, borderRadius: 300, marginTop: 60 }}>
-        <KittenBTN text="Create new account?" screen="Register"></KittenBTN>
+      <View style={styles.buttonContainer}>
+        <KittenBTN text="Create new account?" screen="Register" />
       </View>
     </SafeAreaView>
   );
@@ -113,6 +143,11 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 20,
     backgroundColor: "white",
+  },
+  buttonContainer: {
+    width: 300,
+    borderRadius: 10,
+    marginTop: 20,
   },
 });
 

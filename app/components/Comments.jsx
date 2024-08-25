@@ -67,7 +67,7 @@ const Comments = ({ postId }) => {
       setTextComment("");
     },
     onError: (error) => {
-      console.error(error);
+      console.log(error);
     },
   });
 
@@ -92,7 +92,7 @@ const Comments = ({ postId }) => {
       await funcDetailId();
       Keyboard.dismiss();
     } catch (error) {
-      console.error(error);
+      console.log(error);
     }
   };
 

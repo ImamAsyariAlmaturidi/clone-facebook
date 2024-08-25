@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   StyleSheet,
   Text,
@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { SearchBar } from "react-native-elements";
 import { gql, useLazyQuery } from "@apollo/client";
-import debounce from "lodash.debounce";
 import { TouchableOpacity } from "react-native-gesture-handler";
 
 const SEARCH = gql`
@@ -35,47 +34,76 @@ const SEARCH = gql`
   }
 `;
 
-const Item = ({ name, username }) => (
-  <TouchableOpacity style={styles.item}>
-    <Text style={styles.itemName}>{name}</Text>
-    <Text style={styles.itemUsername}>@{username}</Text>
-  </TouchableOpacity>
-);
-
-const Search = () => {
+const Search = ({ navigation }) => {
   const [searchValue, setSearchValue] = useState("");
   const [searchQuery, { data, loading, error }] = useLazyQuery(SEARCH);
   const [filteredData, setFilteredData] = useState([]);
-
-  const debouncedSearch = useCallback(
-    debounce((query) => {
-      if (query) {
-        searchQuery({ variables: { username: query } });
-      } else {
-        setFilteredData([]);
-      }
-    }, 300),
-    [searchQuery]
-  );
+  const [isSearching, setIsSearching] = useState(false);
+  const typingTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (data) {
       setFilteredData(data.searchUserByUsername || []);
+      setIsSearching(false);
     }
   }, [data]);
 
   useEffect(() => {
-    debouncedSearch(searchValue);
-  }, [searchValue, debouncedSearch]);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    if (searchValue) {
+      setIsSearching(true);
+
+      typingTimeoutRef.current = setTimeout(() => {
+        searchQuery({ variables: { username: searchValue } });
+      }, 300);
+    } else {
+      setFilteredData([]);
+      setIsSearching(false);
+    }
+
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [searchValue, searchQuery]);
 
   const handleSearch = (text) => {
     setSearchValue(text);
   };
 
-  if (loading)
+  if (isSearching && !loading && filteredData.length === 0) {
     return (
-      <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
+      <View style={styles.container}>
+        <SearchBar
+          placeholder="Search Here..."
+          lightTheme
+          round
+          containerStyle={{
+            backgroundColor: "#e0e0e0",
+            borderRadius: 200,
+            marginHorizontal: 30,
+            padding: 1,
+            marginTop: 20,
+            borderTopWidth: "0",
+            borderBottomWidth: "0",
+          }}
+          inputContainerStyle={{
+            backgroundColor: "#e0e0e0",
+          }}
+          inputStyle={styles.searchInput}
+          value={searchValue}
+          onChangeText={handleSearch}
+          autoCorrect={false}
+          autoFocus={false}
+        />
+        <Text style={styles.noResultsText}>No results found</Text>
+      </View>
     );
+  }
 
   return (
     <View style={styles.container}>
@@ -83,18 +111,41 @@ const Search = () => {
         placeholder="Search Here..."
         lightTheme
         round
-        containerStyle={styles.searchContainer}
-        inputContainerStyle={styles.searchInputContainer}
+        containerStyle={{
+          backgroundColor: "#e0e0e0",
+          borderRadius: 200,
+          marginHorizontal: 30,
+          padding: 1,
+          marginTop: 20,
+          borderTopWidth: "0",
+          borderBottomWidth: "0",
+        }}
+        inputContainerStyle={{
+          backgroundColor: "#e0e0e0",
+        }}
         inputStyle={styles.searchInput}
         value={searchValue}
         onChangeText={handleSearch}
         autoCorrect={false}
-        autoFocus="true"
+        autoFocus={true}
       />
+      {isSearching && loading && (
+        <ActivityIndicator size="large" color="#007bff" style={styles.loader} />
+      )}
       <FlatList
         data={filteredData}
         renderItem={({ item }) => (
-          <Item username={item.username} name={item.name} />
+          <TouchableOpacity
+            style={styles.item}
+            onPress={() => {
+              navigation.navigate("Profile", {
+                userId: item._id,
+              });
+            }}
+          >
+            <Text style={styles.itemName}>{item.name}</Text>
+            <Text style={styles.itemUsername}>@{item.username}</Text>
+          </TouchableOpacity>
         )}
         keyExtractor={(item) => item._id}
         contentContainerStyle={styles.listContainer}
@@ -110,18 +161,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f5f5f5",
   },
-  searchContainer: {
-    backgroundColor: "#e0e0e0",
-    borderTopWidth: 0,
-    borderBottomWidth: 0,
-    marginHorizontal: 16,
-    marginVertical: 8,
-    borderRadius: 20,
-  },
-  searchInputContainer: {
-    backgroundColor: "#e0e0e0",
-    borderRadius: 20,
-  },
   searchInput: {
     fontSize: 16,
     color: "#333",
@@ -133,27 +172,35 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     paddingBottom: 20,
+    marginHorizontal: 40,
   },
   item: {
-    backgroundColor: "white",
+    marginTop: 20,
+    marginVertical: 5,
+    backgroundColor: "#ffffff",
     padding: 10,
     borderRadius: 12,
-    marginVertical: 3,
-    marginHorizontal: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowRadius: 6,
+    elevation: 3,
   },
   itemName: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "bold",
     color: "#333",
   },
   itemUsername: {
-    fontSize: 16,
+    fontSize: 10,
     color: "#666",
-    marginTop: 4,
+    marginTop: 10,
+    marginLeft: 12,
+  },
+  noResultsText: {
+    textAlign: "center",
+    color: "#666",
+    fontSize: 16,
+    marginTop: 20,
   },
 });

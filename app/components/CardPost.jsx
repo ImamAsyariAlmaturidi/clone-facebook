@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Avatar } from "@ui-kitten/components";
 import { SimpleLineIcons, Ionicons } from "@expo/vector-icons";
-import { gql, useMutation, useQuery } from "@apollo/client";
+import { gql, useLazyQuery, useMutation, useQuery } from "@apollo/client";
 import ShimmerPlaceHolder from "react-native-shimmer-placeholder";
 import { useNavigation } from "@react-navigation/native";
 import * as ImagePicker from "expo-image-picker";
@@ -93,12 +93,23 @@ const CardPost = () => {
   const navigation = useNavigation();
 
   const { data: profileData, loading: profileLoading } = useQuery(GET_PROFILE);
-  const { data, loading, error } = useQuery(GET_ALL_POST);
+  const [funcGet, { data, loading, error }] = useLazyQuery(GET_ALL_POST);
 
   const [funcFollow] = useMutation(FOLLOW, {
     refetchQueries: [GET_ALL_POST],
   });
 
+  async function get() {
+    try {
+      await funcGet();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  useEffect(() => {
+    get();
+  }, []);
   const [funcAddLike] = useMutation(LIKE_POST, {
     refetchQueries: [GET_ALL_POST],
   });
@@ -106,14 +117,6 @@ const CardPost = () => {
   const [funcAddPost] = useMutation(ADD_POST, {
     refetchQueries: [GET_ALL_POST],
   });
-
-  const follow = async (followerId) => {
-    try {
-      await funcFollow({ variables: { fields: { followerId } } });
-    } catch (error) {
-      console.log("Follow error:", error.message);
-    }
-  };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -162,13 +165,6 @@ const CardPost = () => {
       console.log("Like error:", error.message);
     }
   };
-
-  const isFollowing = (authorId) => {
-    const following = profileData?.getProfile?.followings || [];
-    return following.some((following) => following._id === authorId);
-  };
-
-  useEffect(() => {});
 
   if (loading || profileLoading) {
     return (
@@ -279,23 +275,30 @@ const CardPost = () => {
         renderItem={({ item }) => (
           <View>
             <View style={styles.header}>
-              <Avatar
-                source={require("../assets/logos.png")}
-                style={styles.avatar}
-              />
+              <TouchableOpacity
+                onPress={() => {
+                  navigation.navigate("Profile", {
+                    userId: item.author?._id,
+                  });
+                }}
+              >
+                <Avatar
+                  source={require("../assets/logos.png")}
+                  style={styles.avatar}
+                />
+                <TouchableOpacity
+                  onPress={() => {
+                    navigation.navigate("Profile", {
+                      userId: item.author?._id,
+                    });
+                  }}
+                  style={styles.authorName}
+                >
+                  <Text style={{ fontSize: 15 }}>{item.author?.name}</Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+
               <View style={styles.headerText}>
-                <View style={styles.headerRow}>
-                  <Text style={styles.authorName}>{item.author?.name}</Text>
-                  {item.author._id !== profileData?.getProfile._id &&
-                    !isFollowing(item.author._id) && (
-                      <TouchableOpacity
-                        onPress={() => follow(item.author._id)}
-                        style={styles.authorName}
-                      >
-                        <Text style={styles.followText}>Follow</Text>
-                      </TouchableOpacity>
-                    )}
-                </View>
                 <Text style={styles.content} numberOfLines={3}>
                   {item.content}
                 </Text>
@@ -397,6 +400,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     padding: 15,
     alignItems: "center",
+    justifyContent: "center",
   },
   headerText: {
     flex: 1,
@@ -417,7 +421,7 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
   content: {
-    fontSize: 16,
+    fontSize: 25,
     color: "#666",
     marginVertical: 5,
   },
