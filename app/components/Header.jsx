@@ -67,8 +67,8 @@ const Header = () => {
           lightTheme="true"
           containerStyle={{
             backgroundColor: "white",
-            borderTopWidth: "0",
-            borderBottomWidth: "0",
+            borderTopWidth: 0,
+            borderBottomWidth: 0,
           }}
           inputContainerStyle={{
             backgroundColor: "#e0e0e0",

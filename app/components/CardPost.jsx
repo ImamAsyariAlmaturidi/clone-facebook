@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: "row",
     alignItems: "center",
-    // backgroundColor: "#FFFFFF",
+    backgroundColor: "#FFFFFF",
     justifyContent: "space-between",
     width: "100%",
     padding: 20,
